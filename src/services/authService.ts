@@ -1,6 +1,6 @@
 // src/services/authService.ts
 import { supabase } from './supabaseClient';
-import type { User } from '@supabase/supabase-js'; // <--- ADD 'type' KEYWORD HERE
+import type { User } from '@supabase/supabase-js/src/lib/types'; // <--- UPDATED IMPORT PATH FOR USER TYPE
 
 // Function to listen for authentication state changes
 export const onAuthStateChange = (callback: (user: User | null) => void) => {
