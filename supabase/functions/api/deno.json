@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.ns", "deno.window", "deno.unstable"],
+    "types": ["https://deno.land/x/deno_deploy@1.16.0/types/deploy.d.ts"]
+  },
+  "imports": {
+  }
+}
