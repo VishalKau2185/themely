@@ -1,44 +1,29 @@
 // src/services/dbService.ts
+// This file will now contain only general database operations if needed,
+// profile-specific operations are moved to profileService.ts
 import { supabase } from './supabaseClient';
 
-// Placeholder for fetching a user's profile
-export const getProfile = async (userId: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('profiles') // Assuming a 'profiles' table for user data
-      .select('*')
-      .eq('id', userId)
-      .single(); // Expecting one row
+// --- Diagnostic Logs (can be removed in production) ---
+console.log("dbService.ts: Supabase client URL:", supabase.supabaseUrl);
+// The anonKey property on the client is often not directly exposed for logging.
+console.log("dbService.ts: Supabase client anon key (first 5 chars):", supabase.anonKey ? supabase.anonKey.substring(0, 5) + '...' : 'Not directly exposed on client object');
+// --- End Diagnostic Logs ---
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 is 'no rows found'
-      throw error;
-    }
-    return data;
-  } catch (error: any) {
-    console.error('Error fetching profile:', error.message);
-    throw error;
-  }
-};
-
-// Placeholder for updating a user's profile
-export const updateProfile = async (userId: string, updates: Record<string, any>) => {
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', userId);
-
-    if (error) throw error;
-    return data;
-  } catch (error: any) {
-    console.error('Error updating profile:', error.message);
-    throw error;
-  }
-};
-
-// Placeholder for other database operations (e.g., library items, scheduled posts)
+// Placeholder for other database operations (e.g., fetching library items)
 export const getLibraryItems = async (userId: string) => {
-  // Implement later
   console.log('Fetching library items for user:', userId);
-  return [];
+  return []; // Return an empty array for now
 };
+
+// You can add other generic database functions here as your app grows
+// Example:
+// export const fetchGenericData = async (tableName: string) => {
+//   try {
+//     const { data, error } = await supabase.from(tableName).select('*');
+//     if (error) throw error;
+//     return data;
+//   } catch (error) {
+//     console.error(`Error fetching from ${tableName}:`, error);
+//     return null;
+//   }
+// };

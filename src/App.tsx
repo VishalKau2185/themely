@@ -1,13 +1,21 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
-import type { User } from '@supabase/supabase-js/src/lib/types'; // Import User type
-import { supabase } from './services/supabaseClient'; // Import supabase client
-import { onAuthStateChange, signInAnonymously } from './services/authService';
+// src/App.tsx
+import React, { useState, useEffect, ReactNode } from 'react';
+import {
+  CssBaseline, ThemeProvider as MuiThemeProvider, createTheme,
+  Box, Container, Typography, CircularProgress,
+  useMediaQuery, useTheme as useMuiTheme,
+} from '@mui/material';
 
-// Import components and hooks
+import type { User } from '@supabase/supabase-js';
+import { supabase } from './services/supabaseClient';
+// Removed createProfile, getProfile from dbService as they are now handled by useProfile hook
+// Removed upsertProfile from profileService as it's now called within useProfile hook
+
 import AuthContext from './contexts/AuthContext';
 import ThemeContext from './contexts/ThemeContext';
 import useAuth from './hooks/useAuth';
 import useTheme from './hooks/useTheme';
+
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
@@ -16,238 +24,163 @@ import LibraryPage from './pages/LibraryPage';
 import SchedulePage from './pages/SchedulePage';
 import InboxPage from './pages/InboxPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import ProfileSettings from './pages/ProfileSettingsPage';
+import AuthPage from './pages/AuthPage';
 
-
-// MUI Imports
-import {
-  CssBaseline,
-  ThemeProvider as MuiThemeProvider,
-  createTheme,
-  Box,
-  Typography, // Added in previous fix
-  Container,  // Added in previous fix
-  useMediaQuery,
-  useTheme as useMuiTheme, // Rename to avoid conflict with custom useTheme
-} from '@mui/material';
-
-// --- Auth Provider Component ---
-const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+/* ------------------------------------------------------------------ */
+/* ------------------------- AUTH PROVIDER -------------------------- */
+/* ------------------------------------------------------------------ */
+const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isAuthReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        // Attempt anonymous sign-in if no user is already logged in
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          await signInAnonymously();
-        }
-      } catch (error) {
-        console.error("Supabase authentication error during init:", error);
-      }
-    };
-
-    // Listen for auth state changes from authService
-    const subscription = onAuthStateChange((user) => { // Store the subscription object
+    /* real-time listener – fires INITIAL_SESSION instantly */
+    // This listener is the single source of truth for auth state.
+    // It will fire immediately on component mount with the current session.
+    const sub = supabase.auth.onAuthStateChange(async (event, session) => {
+      const user = session?.user ?? null;
       setCurrentUser(user);
-      setUserId(user?.id || null); // Supabase user ID is `id`
-      setIsAuthReady(true);
-      console.log("Current User ID:", user?.id || "No User / Anonymous");
-    });
 
-    initAuth(); // Call initAuth to ensure a session exists
-
-    return () => {
-      if (subscription && typeof subscription.unsubscribe === 'function') {
-        subscription.unsubscribe(); // Cleanup subscription
+      // Set auth ready after the very first event (INITIAL_SESSION or SIGNED_IN).
+      // This ensures the loading screen is dismissed as soon as auth state is known.
+      if (!isAuthReady) { // Check if not already ready to avoid re-setting
+        setAuthReady(true); // 🔑 unblock UI
       }
-    };
-  }, []);
+
+      // Profile ensuring logic is now handled by the useProfile hook,
+      // which will react to currentUser changes.
+    }).data.subscription;
+
+    // Cleanup function: Unsubscribe from auth state changes when the component unmounts
+    return () => sub.unsubscribe();
+  }, [isAuthReady]); // isAuthReady as dependency ensures the effect itself doesn't re-run unnecessarily,
+                     // but the core logic is driven by onAuthStateChange.
 
   return (
-    <AuthContext.Provider value={{ currentUser, userId, isAuthReady }}>
+    <AuthContext.Provider
+      value={{ currentUser, userId: currentUser?.id ?? null, isAuthReady }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
 
-// --- Theme Provider Component ---
+
+/* ------------------------------------------------------------------ */
+/* ------------------------- THEME PROVIDER ------------------------- */
+/* ------------------------------------------------------------------ */
 const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Initialize theme from localStorage or default to 'light'
-  const [themeMode, setThemeMode] = useState<'light' | 'dark'>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('themely-theme') as 'light' | 'dark') || 'light';
-    }
-    return 'light';
-  });
+  const [mode, setMode] = useState<'light' | 'dark'>(
+    () => (localStorage.getItem('themely-theme') as 'light' | 'dark') || 'light'
+  );
 
-  // Create MUI theme based on current mode
-  const muiTheme = createTheme({
-    palette: {
-      mode: themeMode,
-      primary: {
-        main: '#3f51b5', // A shade of blue
-      },
-      secondary: {
-        main: '#f50057', // A shade of pink
-      },
-      background: {
-        default: themeMode === 'light' ? '#f4f6f8' : '#121212',
-        paper: themeMode === 'light' ? '#ffffff' : '#1e1e1e',
-      },
-    },
-    typography: {
-      fontFamily: 'Inter, sans-serif',
-    },
-    components: {
-      MuiPaper: {
-        styleOverrides: {
-          root: {
-            borderRadius: 8, // Apply rounded corners to Paper components
-          },
-        },
-      },
-      MuiButton: {
-        styleOverrides: {
-          root: {
-            borderRadius: 8, // Apply rounded corners to Buttons
-          },
-        },
-      },
-      MuiDrawer: {
-        styleOverrides: {
-          paper: {
-            borderRadius: '0 8px 8px 0', // Rounded corners for drawer
-          },
-        },
-      },
-      MuiAppBar: {
-        styleOverrides: {
-          root: {
-            borderRadius: 8, // Rounded corners for app bar
-          },
-        },
-      },
-      MuiListItemButton: {
-        styleOverrides: {
-          root: {
-            borderRadius: 8, // Rounded corners for list items
-            margin: '4px 0',
-          },
-        },
-      },
-    },
-  });
-
-  // Toggle theme function
-  const toggleTheme = () => {
-    setThemeMode((prevMode) => {
-      const newMode = prevMode === 'light' ? 'dark' : 'light';
-      localStorage.setItem('themely-theme', newMode);
-      return newMode;
+  const toggleTheme = () =>
+    setMode(prev => {
+      const next = prev === 'light' ? 'dark' : 'light';
+      localStorage.setItem('themely-theme', next);
+      return next;
     });
-  };
+
+  const theme = createTheme({
+    palette: {
+      mode,
+      primary: { main: '#3f51b5' },
+      secondary: { main: '#f50057' },
+      background: {
+        default: mode === 'light' ? '#f4f6f8' : '#121212',
+        paper: mode === 'light' ? '#ffffff' : '#1e1e1e',
+      },
+    },
+    typography: { fontFamily: 'Inter, sans-serif' },
+  });
 
   return (
-    <ThemeContext.Provider value={{ themeMode, toggleTheme }}>
-      <MuiThemeProvider theme={muiTheme}>
-        <CssBaseline /> {/* Resets CSS to a consistent baseline */}
+    <ThemeContext.Provider value={{ themeMode: mode, toggleTheme }}>
+      <MuiThemeProvider theme={theme}>
+        <CssBaseline />
         {children}
       </MuiThemeProvider>
     </ThemeContext.Provider>
   );
 };
 
-// --- Main App Component ---
-const App: React.FC = () => {
+/* ------------------------------------------------------------------ */
+/* --------------------------- DASHBOARD ---------------------------- */
+/* ------------------------------------------------------------------ */
+const Dashboard: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [activeModule, setActiveModule] = useState('home'); // Default active module
-  const { currentUser, userId, isAuthReady } = useAuth();
+  const [active, setActive] = useState('home'); // Default to 'home'
+
+  const { currentUser, userId } = useAuth();
   const muiTheme = useMuiTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
-
-  // Set document title based on active module
-  useEffect(() => {
-    document.title = `Themely - ${activeModule.charAt(0).toUpperCase() + activeModule.slice(1)}`;
-  }, [activeModule]);
-
-  const handleDrawerToggle = () => {
-    setDrawerOpen(!drawerOpen);
-  };
-
-  const handleBellClick = () => {
-    // Implement notification dropdown logic here
-    console.log('Notifications clicked!');
-  };
-
-  const handleProfileClick = () => {
-    // Implement profile menu logic here (e.g., settings, logout)
-    console.log('Profile clicked!');
-  };
-
-  if (!isAuthReady) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: muiTheme.palette.background.default }}>
-        <Typography variant="h5" color="text.primary">Loading Themely...</Typography>
-      </Box>
-    );
-  }
-
-  // Determine user name for greeting (can be fetched from Supabase later)
-  const userName = currentUser?.is_anonymous ? 'Guest' : (currentUser?.user_metadata?.full_name || 'User');
+  const userName = currentUser?.is_anonymous
+    ? 'Guest'
+    : (currentUser?.user_metadata?.full_name || currentUser?.email || 'User');
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: muiTheme.palette.background.default }}> {/* <--- FIXED SYNTAX HERE */}
-      {/* Sidebar */}
+    <Box sx={{ display:'flex', minHeight:'100vh', bgcolor:muiTheme.palette.background.default }}>
       <Sidebar
         drawerOpen={drawerOpen}
-        handleDrawerToggle={handleDrawerToggle}
-        activeModule={activeModule}
-        setActiveModule={setActiveModule}
+        handleDrawerToggle={() => setDrawerOpen(!drawerOpen)}
+        activeModule={active}
+        setActiveModule={setActive}
         userId={userId}
       />
-
-      {/* Main Content Area */}
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 0, // Remove default padding as components will have their own
-          display: 'flex',
-          flexDirection: 'column',
-          width: { sm: `calc(100% - ${drawerOpen && !isMobile ? 240 : (isMobile ? 0 : 56)}px)` },
-          transition: 'width 200ms ease-in-out',
-        }}
-      >
-        {/* Header */}
+      <Box component="main" sx={{
+        flexGrow:1, display:'flex', flexDirection:'column',
+        width:{ sm:`calc(100% - ${drawerOpen && !isMobile ? 240 : isMobile ? 0 : muiTheme.spacing(7)}px)` },
+        transition:'width .2s',
+      }}>
         <Header
-          handleDrawerToggle={handleDrawerToggle}
-          onBellClick={handleBellClick}
-          onProfileClick={handleProfileClick}
           drawerOpen={drawerOpen}
+          handleDrawerToggle={() => setDrawerOpen(!drawerOpen)}
+          onBellClick={() => console.log('🔔')}
+          onProfileClick={() => setActive('profile-settings')}
         />
-
-        {/* Content based on active module */}
-        <Container maxWidth={false} sx={{ flexGrow: 1, py: 0, px: 1, display: 'flex', flexDirection: 'column' }}>
-          {activeModule === 'home' && <HomePage userName={userName} />}
-          {activeModule === 'explore' && <ExplorePage />}
-          {activeModule === 'library' && <LibraryPage />}
-          {activeModule === 'scheduler' && <SchedulePage />}
-          {activeModule === 'inbox' && <InboxPage />}
-          {activeModule === 'analytics' && <AnalyticsPage />}
+        <Container maxWidth={false} sx={{ flexGrow:1, py:2, px:1, display:'flex', flexDirection:'column' }}>
+          {active==='home' && <HomePage userName={userName} />}
+          {active==='explore' && <ExplorePage />}
+          {active==='library' && <LibraryPage />}
+          {active==='scheduler' && <SchedulePage />}
+          {active==='inbox' && <InboxPage />}
+          {active==='analytics' && <AnalyticsPage />}
+          {active==='profile-settings' && <ProfileSettings />}
         </Container>
       </Box>
     </Box>
   );
 };
 
-// --- Root Component for Providers ---
+/* ------------------------------------------------------------------ */
+/* ----------------------------- GATE ------------------------------- */
+/* ------------------------------------------------------------------ */
+const Gate: React.FC = () => {
+  const { currentUser, isAuthReady } = useAuth();
+
+  if (!isAuthReady) {
+    return (
+      <Box sx={{
+        display: 'flex', flexDirection: 'column',
+        justifyContent: 'center', alignItems: 'center',
+        minHeight: '100vh'
+      }}>
+        <CircularProgress size={60} />
+        <Typography sx={{ mt: 2 }} variant="h6">Loading Themely…</Typography>
+      </Box>
+    );
+  }
+  return currentUser ? <Dashboard/> : <AuthPage/>;
+};
+
+/* ------------------------------------------------------------------ */
+/* ------------------------------ ROOT ------------------------------ */
+/* ------------------------------------------------------------------ */
 const Root: React.FC = () => (
   <AuthProvider>
-    <ThemeProvider> {/* Use the custom ThemeProvider here */}
-      <App />
+    <ThemeProvider>
+      <Gate />
     </ThemeProvider>
   </AuthProvider>
 );

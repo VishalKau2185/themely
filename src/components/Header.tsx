@@ -1,5 +1,5 @@
 // src/components/Header.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -9,15 +9,19 @@ import {
   Avatar,
   useMediaQuery,
   useTheme as useMuiTheme,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  Brightness4 as DarkModeIcon,
-  Brightness7 as LightModeIcon,
+  // ADD THESE TWO ICONS HERE
+  Brightness4 as Brightness4Icon, // <--- ADD THIS LINE
+  Brightness7 as Brightness7Icon, // <--- ADD THIS LINE
   Notifications as NotificationsIcon,
-  AccountCircle as AccountCircleIcon,
+  AccountCircle as AccountCircleIcon, // This one isn't actually used, but it's fine to keep
 } from '@mui/icons-material';
 import useTheme from '../hooks/useTheme'; // Import your custom useTheme hook
+import { signOut } from '../services/authService'; // Import signOut function
 
 interface HeaderProps {
   handleDrawerToggle: () => void;
@@ -30,6 +34,24 @@ const Header: React.FC<HeaderProps> = ({ handleDrawerToggle, onBellClick, onProf
   const { themeMode, toggleTheme } = useTheme();
   const muiTheme = useMuiTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+
+  // State for the profile menu anchor element
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const openProfileMenu = Boolean(anchorEl);
+
+  const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleProfileMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = async () => {
+    await signOut(); // Call the signOut service
+    handleProfileMenuClose(); // Close the menu
+    // App.tsx's AuthProvider will detect the signed out state and redirect to AuthPage
+  };
 
   return (
     <AppBar
@@ -64,16 +86,34 @@ const Header: React.FC<HeaderProps> = ({ handleDrawerToggle, onBellClick, onProf
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {/* Theme Switch */}
           <IconButton onClick={toggleTheme} color="inherit">
-            {themeMode === 'dark' ? <LightModeIcon sx={{ color: 'yellow' }} /> : <DarkModeIcon sx={{ color: 'purple' }} />}
+            {themeMode === 'dark' ? <Brightness7Icon sx={{ color: 'yellow' }} /> : <Brightness4Icon sx={{ color: 'purple' }} />}
           </IconButton>
           {/* Notifications */}
           <IconButton onClick={onBellClick} color="inherit">
             <NotificationsIcon />
           </IconButton>
           {/* Profile Avatar */}
-          <IconButton onClick={onProfileClick} color="inherit">
+          <IconButton
+            onClick={handleProfileMenuOpen} // Use new handler
+            color="inherit"
+            aria-controls={openProfileMenu ? 'profile-menu' : undefined}
+            aria-haspopup="true"
+          >
             <Avatar sx={{ bgcolor: muiTheme.palette.secondary.main }}>U</Avatar> {/* Placeholder for user initial/avatar */}
           </IconButton>
+          {/* Profile Menu */}
+          <Menu
+            id="profile-menu"
+            anchorEl={anchorEl}
+            open={openProfileMenu}
+            onClose={handleProfileMenuClose}
+            MenuListProps={{
+              'aria-labelledby': 'profile-button',
+            }}
+          >
+            <MenuItem onClick={onProfileClick}>Profile Settings</MenuItem> {/* Keep original click handler */}
+            <MenuItem onClick={handleLogout}>Logout</MenuItem> {/* New Logout button */}
+          </Menu>
         </Box>
       </Toolbar>
     </AppBar>
