@@ -1,8 +1,13 @@
 /* src/index.css */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import 'tailwindcss'; /* Moved this to the top */
+
+/* You can have @charset or empty @layer statements here if needed, but usually not necessary */
 
 body {
   margin: 0;
+  /* Note: Tailwind's base styles (Preflight) might affect this font-family.
+     You'll typically configure your font in tailwind.config.js if you want Tailwind to manage it. */
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

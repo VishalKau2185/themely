@@ -14,11 +14,9 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  // ADD THESE TWO ICONS HERE
-  Brightness4 as Brightness4Icon, // <--- ADD THIS LINE
-  Brightness7 as Brightness7Icon, // <--- ADD THIS LINE
+  Brightness4 as Brightness4Icon,
+  Brightness7 as Brightness7Icon,
   Notifications as NotificationsIcon,
-  AccountCircle as AccountCircleIcon, // This one isn't actually used, but it's fine to keep
 } from '@mui/icons-material';
 import useTheme from '../hooks/useTheme'; // Import your custom useTheme hook
 import { signOut } from '../services/authService'; // Import signOut function
@@ -27,15 +25,14 @@ interface HeaderProps {
   handleDrawerToggle: () => void;
   onBellClick: () => void;
   onProfileClick: () => void;
-  drawerOpen: boolean; // Not directly used in Header, but passed from App
+  drawerOpen: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ handleDrawerToggle, onBellClick, onProfileClick, drawerOpen }) => {
+const Header: React.FC<HeaderProps> = ({ handleDrawerToggle, onBellClick, onProfileClick }) => {
   const { themeMode, toggleTheme } = useTheme();
   const muiTheme = useMuiTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
-  // State for the profile menu anchor element
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const openProfileMenu = Boolean(anchorEl);
 
@@ -48,10 +45,12 @@ const Header: React.FC<HeaderProps> = ({ handleDrawerToggle, onBellClick, onProf
   };
 
   const handleLogout = async () => {
-    await signOut(); // Call the signOut service
-    handleProfileMenuClose(); // Close the menu
-    // App.tsx's AuthProvider will detect the signed out state and redirect to AuthPage
+    await signOut();
+    handleProfileMenuClose();
   };
+
+  const headerBackgroundColor = themeMode === 'dark' ? muiTheme.palette.grey[900] : muiTheme.palette.grey[100];
+  const borderColor = themeMode === 'dark' ? muiTheme.palette.grey[800] : muiTheme.palette.grey[300];
 
   return (
     <AppBar
@@ -59,17 +58,15 @@ const Header: React.FC<HeaderProps> = ({ handleDrawerToggle, onBellClick, onProf
       color="transparent"
       elevation={0}
       sx={{
-        flexGrow: 1,
-        mb: 2, // Margin bottom for spacing
-        borderRadius: 2, // Rounded corners
-        backgroundColor: muiTheme.palette.background.paper,
-        boxShadow: muiTheme.shadows[3],
-        m: 1, // Margin around the app bar
-        width: 'calc(100% - 16px)', // Adjust width for margin
+        backgroundColor: headerBackgroundColor,
+        borderBottom: `1px solid ${borderColor}`,
+        mb: 0, // Explicitly set margin-bottom to 0
+        // Ensure other margins or paddings that could cause external space are not present
+        // If this AppBar is a flex item, its flex properties are controlled by its parent in App.tsx
       }}
     >
-      <Toolbar>
-        {isMobile && ( // Show menu icon only on mobile
+      <Toolbar sx={{ minHeight: '56px' }}>
+        {isMobile && (
           <IconButton
             color="inherit"
             aria-label="open drawer"
@@ -80,39 +77,36 @@ const Header: React.FC<HeaderProps> = ({ handleDrawerToggle, onBellClick, onProf
             <MenuIcon />
           </IconButton>
         )}
-        <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }} /> {/* Spacer */}
+        <Box sx={{ flexGrow: 1 }} /> {/* Spacer */}
 
-        {/* Top-right utility cluster */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {/* Theme Switch */}
-          <IconButton onClick={toggleTheme} color="inherit">
-            {themeMode === 'dark' ? <Brightness7Icon sx={{ color: 'yellow' }} /> : <Brightness4Icon sx={{ color: 'purple' }} />}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
+          <IconButton onClick={toggleTheme} color="inherit" title={themeMode === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}>
+            {themeMode === 'dark' ? <Brightness7Icon sx={{ color: muiTheme.palette.warning.light }} /> : <Brightness4Icon sx={{ color: muiTheme.palette.primary.main }} />}
           </IconButton>
-          {/* Notifications */}
-          <IconButton onClick={onBellClick} color="inherit">
+          <IconButton onClick={onBellClick} color="inherit" title="Notifications">
             <NotificationsIcon />
           </IconButton>
-          {/* Profile Avatar */}
           <IconButton
-            onClick={handleProfileMenuOpen} // Use new handler
+            onClick={handleProfileMenuOpen}
             color="inherit"
             aria-controls={openProfileMenu ? 'profile-menu' : undefined}
             aria-haspopup="true"
+            title="Profile"
           >
-            <Avatar sx={{ bgcolor: muiTheme.palette.secondary.main }}>U</Avatar> {/* Placeholder for user initial/avatar */}
+            <Avatar sx={{ bgcolor: muiTheme.palette.secondary.main, width: 32, height: 32 }}>U</Avatar>
           </IconButton>
-          {/* Profile Menu */}
           <Menu
             id="profile-menu"
             anchorEl={anchorEl}
             open={openProfileMenu}
             onClose={handleProfileMenuClose}
-            MenuListProps={{
-              'aria-labelledby': 'profile-button',
-            }}
+            MenuListProps={{ 'aria-labelledby': 'profile-button' }}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            slotProps={{ paper: { sx: { bgcolor: headerBackgroundColor, border: `1px solid ${borderColor}` }}}}
           >
-            <MenuItem onClick={onProfileClick}>Profile Settings</MenuItem> {/* Keep original click handler */}
-            <MenuItem onClick={handleLogout}>Logout</MenuItem> {/* New Logout button */}
+            <MenuItem onClick={() => { onProfileClick(); handleProfileMenuClose(); }}>Profile Settings</MenuItem>
+            <MenuItem onClick={handleLogout}>Logout</MenuItem>
           </Menu>
         </Box>
       </Toolbar>
