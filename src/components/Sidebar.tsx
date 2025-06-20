@@ -22,6 +22,7 @@ import {
   CalendarMonth as CalendarIcon,
   Mail as MailIcon,
   BarChart as BarChartIcon,
+  AccountCircle as AccountCircleIcon, // <-- 1. IMPORT THE NEW ICON
 } from '@mui/icons-material';
 
 interface SidebarProps {
@@ -38,6 +39,8 @@ const Sidebar: React.FC<SidebarProps> = ({ drawerOpen, handleDrawerToggle, activ
     { name: 'Explore', icon: SearchIcon, route: 'explore' },
     { name: 'Library', icon: BookmarkIcon, route: 'library' },
     { name: 'Scheduler', icon: CalendarIcon, route: 'scheduler' },
+    // -- 2. ADD THE NEW "ACCOUNTS" ITEM TO THE NAVIGATION LIST --
+    { name: 'Accounts', icon: AccountCircleIcon, route: 'accounts' },
     { name: 'Inbox', icon: MailIcon, route: 'inbox' },
     { name: 'Analytics', icon: BarChartIcon, route: 'analytics' },
   ];
