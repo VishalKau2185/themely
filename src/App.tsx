@@ -11,7 +11,7 @@ import { supabase } from './services/supabaseClient'; // Ensure this path is cor
 
 import AuthContext from './contexts/AuthContext'; // Ensure this path is correct
 import ThemeContext from './contexts/ThemeContext'; // Ensure this path is correct
-import useAuth from './hooks/useAuth'; // Ensure this path is correct
+import { useAuth } from "./contexts/AuthContext"; // Ensure this path is correct
 
 // Import your actual pages/components - adjust paths as needed
 import Sidebar from './components/Sidebar';

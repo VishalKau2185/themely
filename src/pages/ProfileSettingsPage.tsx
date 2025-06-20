@@ -5,7 +5,7 @@ import {
   Typography, CircularProgress, Alert, AlertTitle,
 } from '@mui/material';
 
-import useAuth from '../hooks/useAuth';
+import { useAuth } from "../contexts/AuthContext";
 import { fetchProfile, upsertProfile } from '../services/profileService';
 import type { Profile } from '../services/profileService'; // Import Profile type
 

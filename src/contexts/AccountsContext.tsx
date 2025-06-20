@@ -1,6 +1,6 @@
 // src/contexts/AccountsContext.tsx
-import React, { createContext, useContext, useState, useEffect } from 'react'; // <-- CHANGED: Simplified React import
-import useAuth from '../hooks/useAuth'; // <-- CHANGED: Corrected to handle a default export
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAuth } from './AuthContext'; // Correctly import from the context file now
 import { generateUserJwt, getProfiles } from '../../lib/ayrshare';
 
 interface SocialProfile {
@@ -19,15 +19,14 @@ interface AccountsContextType {
 
 const AccountsContext = createContext<AccountsContextType | undefined>(undefined);
 
-// CHANGED: Using React.ReactNode directly
-export const AccountsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+export const AccountsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user } = useAuth(); // This will no longer crash
   const [profiles, setProfiles] = useState<SocialProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchProfiles = async () => {
-    if (!user) {
+    if (!user) { // If there's no user, stop loading and clear profiles
       setProfiles([]);
       setIsLoading(false);
       return;
@@ -49,7 +48,7 @@ export const AccountsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     fetchProfiles();
-  }, [user]);
+  }, [user]); // This dependency array ensures profiles are fetched when the user logs in
 
   return (
     <AccountsContext.Provider value={{ profiles, isLoading, error, refetchProfiles: fetchProfiles }}>
