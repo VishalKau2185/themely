@@ -1,6 +1,6 @@
 // src/contexts/AccountsContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useAuth } from './AuthContext'; // Correctly import from the context file now
+import { useAuth } from './AuthContext';
 import { generateUserJwt, getProfiles } from '../../lib/ayrshare';
 
 interface SocialProfile {
@@ -20,13 +20,13 @@ interface AccountsContextType {
 const AccountsContext = createContext<AccountsContextType | undefined>(undefined);
 
 export const AccountsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { user } = useAuth(); // This will no longer crash
+  const { user } = useAuth();
   const [profiles, setProfiles] = useState<SocialProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchProfiles = async () => {
-    if (!user) { // If there's no user, stop loading and clear profiles
+    if (!user) {
       setProfiles([]);
       setIsLoading(false);
       return;
@@ -48,7 +48,7 @@ export const AccountsProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   useEffect(() => {
     fetchProfiles();
-  }, [user]); // This dependency array ensures profiles are fetched when the user logs in
+  }, [user]);
 
   return (
     <AccountsContext.Provider value={{ profiles, isLoading, error, refetchProfiles: fetchProfiles }}>

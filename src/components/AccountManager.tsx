@@ -1,16 +1,14 @@
 // src/components/AccountManager.tsx
-'use client';
-
 import React from 'react';
 import { generateUserJwt, deleteSocial } from '../../lib/ayrshare';
 import { useAuth } from '../contexts/AuthContext';
-import { useAccounts } from '../contexts/AccountsContext'; // <-- USE THE NEW CONTEXT
+import { useAccounts } from '../contexts/AccountsContext';
 import { Box, Button, Typography, List, ListItem, ListItemText, ListItemAvatar, Avatar, IconButton, CircularProgress } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 const AccountManager: React.FC = () => {
   const { user } = useAuth();
-  const { profiles, isLoading, error, refetchProfiles } = useAccounts(); // <-- GET DATA FROM CONTEXT
+  const { profiles, isLoading, error, refetchProfiles } = useAccounts();
 
   const handleConnect = async () => {
     if (!user) return;
@@ -23,7 +21,7 @@ const AccountManager: React.FC = () => {
     if (!user) return;
     const { jwt } = await generateUserJwt(user.id);
     await deleteSocial(jwt, [profileKey]);
-    refetchProfiles(); // Re-fetch profiles after deleting
+    refetchProfiles();
   };
 
   if (isLoading) return <CircularProgress />;

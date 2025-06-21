@@ -1,6 +1,6 @@
 // src/contexts/AuthContext.tsx
-import { createContext, useState, useEffect, ReactNode, FC, useContext } from 'react';
-import type { Session, User } from '@supabase/supabase-js'; // <-- CORRECTED IMPORT
+import React, { createContext, useState, useEffect, ReactNode, FC, useContext } from 'react';
+import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../services/supabaseClient';
 
 interface AuthContextType {
